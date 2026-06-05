@@ -24,14 +24,18 @@ public final class SampleDetector {
     private final String pythonExecutable;
 
     public SampleDetector() {
-        this(resolveProjectRoot());
+        this(resolveProjectRoot(), resolvePythonExecutable());
     }
 
     public SampleDetector(Path projectRoot) {
+        this(projectRoot, resolvePythonExecutable());
+    }
+
+    public SampleDetector(Path projectRoot, String pythonExecutable) {
         this.projectRoot = projectRoot.toAbsolutePath().normalize();
         this.scriptPath = this.projectRoot.resolve("ml").resolve("predict.py");
         this.checkpointPath = this.projectRoot.resolve("ml").resolve("checkpoints").resolve("sample_detector_resnet18.pt");
-        this.pythonExecutable = resolvePythonExecutable();
+        this.pythonExecutable = normalizePythonExecutable(pythonExecutable);
     }
 
     public SampleDetectionPrediction predict(Path imagePath) {
@@ -116,6 +120,17 @@ public final class SampleDetector {
         return Path.of(configured);
     }
 
+    private static String normalizePythonExecutable(String configured) {
+        if (configured == null || configured.isBlank()) {
+            return resolvePythonExecutable();
+        }
+        String trimmed = configured.trim();
+        if (trimmed.length() >= 2 && trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
+            return trimmed.substring(1, trimmed.length() - 1);
+        }
+        return trimmed;
+    }
+
     private static String resolvePythonExecutable() {
         String configured = System.getProperty("sampleDetection.python");
         if (configured == null || configured.isBlank()) {
@@ -152,4 +167,5 @@ public final class SampleDetector {
     private record ProcessResult(int exitCode, String stdout, String stderr) {
     }
 }
+
 

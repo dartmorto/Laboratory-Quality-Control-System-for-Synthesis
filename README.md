@@ -2,19 +2,21 @@
 
 Единый учебный проект, который связывает backend управления экспериментами и модель детекции образца по изображению.
 
-В этот репозиторий перенесено только нужное для задачи:
+В репозитории оставлено только нужное для задачи:
 
 - Java backend: доменные классы, менеджер коллекций, CLI-команды, пользователи и валидация;
-- Python inference: архитектура модели, препроцессинг, CLI-предиктор и один лучший checkpoint;
-- не перенесены JavaFX UI, PostgreSQL-черновики, IDE-файлы, обучающие датасеты, изображения, отчеты и скрипты обучения.
+- JavaFX UI: журнал экспериментов, запусков, результатов и экран детекции образца;
+- Python inference: архитектура модели, препроцессинг, CLI-предиктор и один checkpoint;
+- не перенесены PostgreSQL-черновики, IDE-файлы, обучающие датасеты, изображения, отчеты и скрипты обучения.
 
 ## Структура
 
 ```text
-src/main/java/       Java backend и CLI
-ml/sample_detection/ код модели и препроцессинга
-ml/checkpoints/      сохраненная модель
-scripts/             удобные команды запуска
+src/main/java/             Java backend, CLI и JavaFX UI
+src/main/resources/ui/     CSS тема JavaFX
+ml/sample_detection/       код модели и препроцессинга
+ml/checkpoints/            сохраненная модель
+scripts/                   удобные команды запуска
 ```
 
 ## Python окружение
@@ -24,10 +26,22 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r ml\requirements.txt
 ```
 
-Если Python лежит не в PATH, укажите его для Java-команды:
+Если Python лежит не в PATH, его можно указать в поле `Python` в JavaFX окне или через переменную:
 
 ```powershell
 $env:SAMPLE_DETECTION_PYTHON = "C:\path\to\python.exe"
+```
+
+## Запуск JavaFX UI
+
+```powershell
+.\scripts\run-ui.ps1
+```
+
+Или напрямую через Maven:
+
+```powershell
+mvn -q javafx:run
 ```
 
 ## Проверка модели напрямую
@@ -36,14 +50,14 @@ $env:SAMPLE_DETECTION_PYTHON = "C:\path\to\python.exe"
 .\.venv\Scripts\python.exe ml\predict.py --image C:\path\to\sample.jpg
 ```
 
-## Запуск backend
+## Запуск CLI backend
 
 ```powershell
 mvn -q compile
 java -cp target\classes Main
 ```
 
-Основной сценарий CLI:
+Основной CLI-сценарий:
 
 ```text
 register
@@ -54,4 +68,4 @@ detect_sample <run_id> <path_to_image>
 res_show <result_id>
 ```
 
-Команда `detect_sample` вызывает Python-модель, печатает результат детекции образца и сохраняет уверенность модели как результат запуска с параметром `SAMPLE_DETECTION_CONFIDENCE`.
+Команда `detect_sample` и JavaFX экран детекции вызывают Python-модель, печатают/показывают результат детекции образца и сохраняют уверенность модели как результат запуска с параметром `SAMPLE_DETECTION_CONFIDENCE`.
