@@ -49,6 +49,7 @@ import user.AuthService;
 import user.UserRepository;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -284,7 +285,9 @@ public class SampleDetectionApp extends Application {
         Button chooseImage = new Button("Выбрать изображение");
         chooseImage.setOnAction(event -> chooseImage());
         pythonField = new TextField(defaultPythonExecutable());
-        pythonField.setPromptText("python");
+        pythonField.setPromptText("Автоматически или путь к python.exe");
+        Button choosePython = new Button("Выбрать Python");
+        choosePython.setOnAction(event -> choosePythonExecutable());
         analyzeButton = new Button("Выполнить детекцию");
         analyzeButton.setOnAction(event -> analyzeSelectedImage());
         analyzeButton.setDisable(true);
@@ -301,7 +304,8 @@ public class SampleDetectionApp extends Application {
         controls.add(chooseImage, 2, 1);
         controls.add(new Label("Python"), 0, 2);
         controls.add(pythonField, 1, 2);
-        controls.add(analyzeButton, 2, 2);
+        controls.add(choosePython, 2, 2);
+        controls.add(analyzeButton, 3, 2);
         GridPane.setHgrow(detectionRunBox, Priority.ALWAYS);
         GridPane.setHgrow(imagePathField, Priority.ALWAYS);
         GridPane.setHgrow(pythonField, Priority.ALWAYS);
@@ -562,12 +566,40 @@ public class SampleDetectionApp extends Application {
         setStatus(status);
     }
 
-    private String defaultPythonExecutable() {
-        String configured = System.getenv("SAMPLE_DETECTION_PYTHON");
-        if (configured == null || configured.isBlank()) {
-            configured = System.getProperty("sampleDetection.python");
+    private void choosePythonExecutable() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Выберите python.exe");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Python", "python.exe", "*.exe"));
+        File selected = chooser.showOpenDialog(stage);
+        if (selected != null) {
+            pythonField.setText(selected.getAbsolutePath());
+            setStatus("Python выбран");
         }
-        return configured == null || configured.isBlank() ? "python" : configured;
+    }
+
+    private String defaultPythonExecutable() {
+        String configured = firstNonBlank(
+                System.getenv("SAMPLE_DETECTION_PYTHON"),
+                System.getProperty("sampleDetection.python")
+        );
+        if (configured != null) {
+            return configured;
+        }
+
+        Path localVenv = Path.of("").toAbsolutePath().normalize().resolve(".venv").resolve("Scripts").resolve("python.exe");
+        if (Files.isRegularFile(localVenv)) {
+            return localVenv.toString();
+        }
+        return "";
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 
     private String formatDate(Instant instant) {
@@ -644,3 +676,5 @@ public class SampleDetectionApp extends Application {
         }
     }
 }
+
+

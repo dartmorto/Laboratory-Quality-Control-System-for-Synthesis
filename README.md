@@ -26,7 +26,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r ml\requirements.txt
 ```
 
-Если Python лежит не в PATH, его можно указать в поле `Python` в JavaFX окне или через переменную:
+В JavaFX поле `Python` можно оставить пустым: приложение попробует найти подходящее окружение автоматически. Если нужно указать интерпретатор вручную, выберите `python.exe` в окне или задайте переменную:
 
 ```powershell
 $env:SAMPLE_DETECTION_PYTHON = "C:\path\to\python.exe"
@@ -69,3 +69,4 @@ res_show <result_id>
 ```
 
 Команда `detect_sample` и JavaFX экран детекции вызывают Python-модель, печатают/показывают результат детекции образца и сохраняют уверенность модели как результат запуска с параметром `SAMPLE_DETECTION_CONFIDENCE`.
+

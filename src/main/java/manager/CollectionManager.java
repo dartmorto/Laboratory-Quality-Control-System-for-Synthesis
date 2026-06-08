@@ -20,20 +20,17 @@ public class CollectionManager {
     private final Map<Long, Run> runs = new TreeMap<>();
     private final Map<Long, Result> results = new TreeMap<>();
 
-    private long currentExperimentId = 1;
-    private long currentRunId = 1;
-    private long currentResultId = 1;
 
     private long generateExperimentId() {
-        return currentExperimentId++;
+        return nextId(experiments, "эксперимента");
     }
 
     private long generateRunId() {
-        return currentRunId++;
+        return nextId(runs, "запуска");
     }
 
     private long generateResultId() {
-        return currentResultId++;
+        return nextId(results, "результата");
     }
 
     public Experiment createExperiment(String name, String description, String ownerUsername) {
@@ -55,9 +52,7 @@ public class CollectionManager {
         Validator.requirePositive(experiment.getId(), "ID эксперимента");
         Validator.requireExists(!experiments.containsKey(experiment.getId()), "Эксперимент с таким ID уже существует");
 
-        long nextExperimentId = nextAfter(currentExperimentId, experiment.getId(), "эксперимента");
         experiments.put(experiment.getId(), experiment);
-        currentExperimentId = nextExperimentId;
     }
 
     public void updateExperiment(long id, Experiment updated) {
@@ -106,9 +101,6 @@ public class CollectionManager {
         TreeMap<Long, Run> runCopy = new TreeMap<>(loadedRuns);
         TreeMap<Long, Result> resultCopy = new TreeMap<>(loadedResults);
 
-        currentExperimentId = nextId(experimentCopy, "эксперимента");
-        currentRunId = nextId(runCopy, "запуска");
-        currentResultId = nextId(resultCopy, "результата");
 
         experiments.clear();
         experiments.putAll(experimentCopy);
@@ -156,9 +148,7 @@ public class CollectionManager {
         Validator.requireExists(experiments.containsKey(run.getExperimentId()), "Эксперимент не найден");
         Validator.requireExists(!runs.containsKey(run.getId()), "Запуск с таким ID уже существует");
 
-        long nextRunId = nextAfter(currentRunId, run.getId(), "запуска");
         runs.put(run.getId(), run);
-        currentRunId = nextRunId;
     }
 
     public Run getRunById(long id) {
@@ -244,9 +234,7 @@ public class CollectionManager {
         Validator.requireExists(runs.containsKey(result.getRunId()), "Запуск не найден");
         Validator.requireExists(!results.containsKey(result.getId()), "Результат с таким ID уже существует");
 
-        long nextResultId = nextAfter(currentResultId, result.getId(), "результата");
         results.put(result.getId(), result);
-        currentResultId = nextResultId;
     }
 
     public Map<Long, Result> getAllResults() {
@@ -297,10 +285,5 @@ public class CollectionManager {
         return maxId + 1;
     }
 
-    private long nextAfter(long currentId, long usedId, String entityName) {
-        if (usedId == Long.MAX_VALUE) {
-            throw new IllegalArgumentException("ID " + entityName + " достиг максимального значения");
-        }
-        return Math.max(currentId, usedId + 1);
-    }
 }
+

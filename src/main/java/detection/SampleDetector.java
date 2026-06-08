@@ -77,7 +77,7 @@ public final class SampleDetector {
             String stderr = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
             return new ProcessResult(process.exitValue(), stdout, stderr);
         } catch (IOException e) {
-            throw new IllegalStateException("Cannot start Python executable '" + pythonExecutable + "'", e);
+            throw new IllegalStateException("Не удалось запустить Python: " + pythonExecutable + ". Выберите python.exe от окружения с torch, torchvision и Pillow.", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Sample detection model execution was interrupted", e);
@@ -136,10 +136,21 @@ public final class SampleDetector {
         if (configured == null || configured.isBlank()) {
             configured = System.getenv("SAMPLE_DETECTION_PYTHON");
         }
-        if (configured == null || configured.isBlank()) {
-            return "python";
+        if (configured != null && !configured.isBlank()) {
+            return configured.trim();
         }
-        return configured;
+
+        String home = System.getProperty("user.home");
+        Path[] candidates = {
+                Path.of("").toAbsolutePath().normalize().resolve(".venv").resolve("Scripts").resolve("python.exe"),
+                Path.of(home, "PycharmProjects", "FeSO4detection", ".venv", "Scripts", "python.exe")
+        };
+        for (Path candidate : candidates) {
+            if (Files.isRegularFile(candidate)) {
+                return candidate.toString();
+            }
+        }
+        return "python";
     }
 
     private static void requireFile(Path path, String label) {
@@ -167,5 +178,6 @@ public final class SampleDetector {
     private record ProcessResult(int exitCode, String stdout, String stderr) {
     }
 }
+
 
 
