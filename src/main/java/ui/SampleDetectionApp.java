@@ -45,6 +45,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 import manager.CollectionManager;
+import storage.LocalDataStorage;
 import user.AuthService;
 import user.UserRepository;
 
@@ -60,6 +61,7 @@ public class SampleDetectionApp extends Application {
     private final CollectionManager manager = new CollectionManager();
     private final UserRepository userRepository = new UserRepository();
     private final AuthService authService = new AuthService(userRepository);
+    private final LocalDataStorage localStorage = new LocalDataStorage(Path.of("sample-data.bin"));
 
     private final ObservableList<Experiment> experiments = FXCollections.observableArrayList();
     private final ObservableList<Run> runs = FXCollections.observableArrayList();
@@ -176,6 +178,7 @@ public class SampleDetectionApp extends Application {
         root.setTop(createToolbar());
         root.setCenter(createWorkspace());
         root.setBottom(createStatusBar());
+        tryLoadSavedData();
         refreshData();
         Scene scene = new Scene(root, 1240, 760);
         applyStyles(scene);
@@ -189,6 +192,10 @@ public class SampleDetectionApp extends Application {
         title.getStyleClass().add("app-title");
         Label user = new Label(authService.getCurrentUsername());
         user.getStyleClass().add("user-label");
+        Button save = new Button("Сохранить");
+        save.setOnAction(event -> saveData());
+        Button load = new Button("Загрузить");
+        load.setOnAction(event -> loadData());
         Button refresh = new Button("Обновить");
         refresh.setOnAction(event -> refreshData());
         Button logout = new Button("Выйти");
@@ -198,7 +205,7 @@ public class SampleDetectionApp extends Application {
         });
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox toolbar = new HBox(12, title, spacer, user, refresh, logout);
+        HBox toolbar = new HBox(12, title, spacer, user, save, load, refresh, logout);
         toolbar.setAlignment(Pos.CENTER_LEFT);
         toolbar.setPadding(new Insets(12, 16, 12, 16));
         toolbar.getStyleClass().add("toolbar");
@@ -418,6 +425,48 @@ public class SampleDetectionApp extends Application {
         setStatus("Данные обновлены");
     }
 
+    private void tryLoadSavedData() {
+        if (!localStorage.exists()) {
+            return;
+        }
+        try {
+            localStorage.load(manager);
+            setStatus("Данные загружены");
+        } catch (Exception e) {
+            showError("Не удалось загрузить записи", e.getMessage());
+        }
+    }
+
+    private void saveData() {
+        try {
+            localStorage.save(manager);
+            setStatus("Данные сохранены: " + localStorage.dataFile());
+        } catch (Exception e) {
+            showError("Не удалось сохранить записи", e.getMessage());
+        }
+    }
+
+    private void loadData() {
+        if (!localStorage.exists()) {
+            setStatus("Сохраненные записи не найдены");
+            return;
+        }
+        try {
+            localStorage.load(manager);
+            refreshData();
+            setStatus("Данные загружены: " + localStorage.dataFile());
+        } catch (Exception e) {
+            showError("Не удалось загрузить записи", e.getMessage());
+        }
+    }
+
+    private void persistSilently() {
+        try {
+            localStorage.save(manager);
+        } catch (Exception e) {
+            setStatus("Ошибка сохранения");
+        }
+    }
     private void createExperiment() {
         try {
             Experiment experiment = manager.createExperiment(
@@ -430,6 +479,7 @@ public class SampleDetectionApp extends Application {
             refreshData();
             experimentTable.getSelectionModel().select(experiment);
             experimentPicker.getSelectionModel().select(experiment);
+            persistSilently();
             setStatus("Эксперимент создан");
         } catch (Exception e) {
             showError("Не удалось создать эксперимент", e.getMessage());
@@ -448,6 +498,7 @@ public class SampleDetectionApp extends Application {
             refreshData();
             runTable.getSelectionModel().select(run);
             detectionRunBox.getSelectionModel().select(run);
+            persistSilently();
             setStatus("Запуск создан");
         } catch (Exception e) {
             showError("Не удалось создать запуск", e.getMessage());
@@ -463,6 +514,7 @@ public class SampleDetectionApp extends Application {
         try {
             manager.removeExperiment(experiment.getId());
             refreshData();
+            persistSilently();
             setStatus("Эксперимент удален");
         } catch (Exception e) {
             showError("Не удалось удалить эксперимент", e.getMessage());
@@ -478,6 +530,7 @@ public class SampleDetectionApp extends Application {
         try {
             manager.removeRun(run.getId());
             refreshData();
+            persistSilently();
             setStatus("Запуск удален");
         } catch (Exception e) {
             showError("Не удалось удалить запуск", e.getMessage());
@@ -552,6 +605,7 @@ public class SampleDetectionApp extends Application {
         );
         refreshData();
         resultTable.getSelectionModel().select(result);
+        persistSilently();
     }
 
     private void updateAnalyzeState() {
@@ -676,5 +730,3 @@ public class SampleDetectionApp extends Application {
         }
     }
 }
-
-

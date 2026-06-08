@@ -16,3 +16,9 @@ __pycache__/
 
 outputs/
 data/
+
+config/local.properties
+*.local.properties
+
+sample-data.bin
+*.bin

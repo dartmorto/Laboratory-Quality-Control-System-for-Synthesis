@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -139,11 +140,12 @@ public final class SampleDetector {
         if (configured != null && !configured.isBlank()) {
             return configured.trim();
         }
-
-        String home = System.getProperty("user.home");
+        Optional<String> localConfig = readLocalPythonExecutable();
+        if (localConfig.isPresent()) {
+            return localConfig.get();
+        }
         Path[] candidates = {
-                Path.of("").toAbsolutePath().normalize().resolve(".venv").resolve("Scripts").resolve("python.exe"),
-                Path.of(home, "PycharmProjects", "FeSO4detection", ".venv", "Scripts", "python.exe")
+                Path.of("").toAbsolutePath().normalize().resolve(".venv").resolve("Scripts").resolve("python.exe")
         };
         for (Path candidate : candidates) {
             if (Files.isRegularFile(candidate)) {
@@ -151,6 +153,39 @@ public final class SampleDetector {
             }
         }
         return "python";
+    }
+
+    private static Optional<String> readLocalPythonExecutable() {
+        Path configPath = Path.of("").toAbsolutePath().normalize()
+                .resolve("config")
+                .resolve("local.properties");
+        if (!Files.isRegularFile(configPath)) {
+            return Optional.empty();
+        }
+
+        try {
+            for (String line : Files.readAllLines(configPath, StandardCharsets.UTF_8)) {
+                String trimmed = line.trim();
+                if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                    continue;
+                }
+                int separator = trimmed.indexOf('=');
+                if (separator < 0) {
+                    continue;
+                }
+                String key = trimmed.substring(0, separator).trim();
+                if (!"sampleDetection.python".equals(key)) {
+                    continue;
+                }
+                String configured = trimmed.substring(separator + 1).trim();
+                if (!configured.isBlank()) {
+                    return Optional.of(configured);
+                }
+            }
+        } catch (IOException e) {
+            return Optional.empty();
+        }
+        return Optional.empty();
     }
 
     private static void requireFile(Path path, String label) {
@@ -178,6 +213,3 @@ public final class SampleDetector {
     private record ProcessResult(int exitCode, String stdout, String stderr) {
     }
 }
-
-
-
